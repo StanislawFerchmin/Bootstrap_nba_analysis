@@ -261,11 +261,11 @@ def mc_bootstrap(
     }
 
 
-# ── 6. MSE ──────────────────────────────────────────────────────────────────────
+# ── 6. RSS ──────────────────────────────────────────────────────────────────────
 
-def mse(Y: np.ndarray, X: np.ndarray, intercept: float, slope: float) -> float:
-    """Mean squared error of a linear predictor: mean((Y - b0 - b1*X)^2)."""
-    return float(np.mean((Y - intercept - slope * X) ** 2))
+def rss(Y: np.ndarray, X: np.ndarray, intercept: float, slope: float) -> float:
+    """Residual sum of squares: sum((Y - b0 - b1*X)^2).  Matches eq. 4.1–4.2."""
+    return float(np.sum((Y - intercept - slope * X) ** 2))
 
 
 # ── 7. KDE plot helper ─────────────────────────────────────────────────────────
@@ -288,7 +288,7 @@ def bootstrap_regression_demo(csv_path: str = "nba_cleaned.csv") -> None:
 
     Prints the OLS line and confidence intervals, then saves:
       - bootstrap_regression_coefs.png  (b0 and b1 distributions)
-      - bootstrap_mse_diff.png          (MSE_bootstrap - MSE_observed)
+      - bootstrap_rss_diff.png          (RSS* - RSS, eq. 4.1–4.2)
     """
     df = pd.read_csv(csv_path)
     X = df["DRIBBLES"].reset_index(drop=True).values
@@ -322,26 +322,26 @@ def bootstrap_regression_demo(csv_path: str = "nba_cleaned.csv") -> None:
     plt.close()
     print("Saved: bootstrap_regression_coefs.png")
 
-    # --- MSE excess distribution ---
-    real_error = mse(y, X, coef[0], coef[1])
+    # --- RSS excess distribution (eq. 4.1–4.2, Theorem 4.3) ---
+    real_rss = rss(y, X, coef[0], coef[1])
     errors_diff = [
-        mse(y, X, i, s) - real_error
+        rss(y, X, i, s) - real_rss
         for i, s in zip(data["b0"]["distribution"], data["b1"]["distribution"])
     ]
     plt.figure(figsize=(8, 6))
     plt.hist(errors_diff, color="darkblue", bins=100, edgecolor="black",
              label=f"Średnia: {np.mean(errors_diff):.4f}")
-    plt.title("Różnica błędów średniokwadratowych")
-    plt.xlabel("MSE_bootstrap - MSE_OLS")
+    plt.title("Różnica błędów resztowych RSS")
+    plt.xlabel("RSS* - RSS")
     plt.ylabel("Liczba replikacji")
     plt.legend(fontsize=12)
     plt.tight_layout()
-    plt.savefig("bootstrap_mse_diff.png", dpi=110)
+    plt.savefig("bootstrap_rss_diff.png", dpi=110)
     plt.close()
-    print("Saved: bootstrap_mse_diff.png")
+    print("Saved: bootstrap_rss_diff.png")
 
-    print(f"\nOLS MSE:                  {real_error:.6f}")
-    print(f"Mean bootstrap MSE excess: {np.mean(errors_diff):.6f}")
+    print(f"\nOLS RSS:                  {real_rss:.6f}")
+    print(f"Mean bootstrap RSS excess: {np.mean(errors_diff):.6f}")
     print(f"\nb0 95% CI: {data['b0']['conf_interval']}")
     print(f"b1 95% CI: {data['b1']['conf_interval']}")
 
