@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Error — NBA Streakiness{% endblock %}
+{% block content %}
+<div class="container" style="padding-top:4rem; text-align:center;">
+  <div style="font-size:3rem; margin-bottom:1rem;">!</div>
+  <h1 style="color:var(--amber);">Something went wrong</h1>
+  <p style="color:var(--muted); margin:1rem auto; max-width:540px; line-height:1.6;">
+    {{ message }}
+  </p>
+  <div style="margin-top:2rem; display:flex; gap:1rem; justify-content:center;">
+    <a href="/" class="btn btn-primary">Go Home</a>
+    <a href="/refresh" class="btn btn-danger">Refresh Data</a>
+  </div>
+</div>
+{% endblock %}

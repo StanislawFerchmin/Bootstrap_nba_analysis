@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Refresh Data — NBA Streakiness{% endblock %}
+{% block content %}
+<div class="container" style="padding-top:4rem; max-width:640px;">
+  <h1>Refresh NBA Data</h1>
+  <p class="subtitle">Fetch fresh shot data from stats.nba.com</p>
+
+  <div class="card">
+    <div class="hypothesis-box" style="margin-bottom:1.5rem;">
+      This will hit the NBA Stats API to fetch shot-by-shot sequences for the
+      <strong>top-5 scorers</strong> of <strong>SAS · OKC · NYK · CLE</strong>
+      for the 2025-26 season (Regular Season + Playoffs).<br/><br/>
+      Expect ~3–6 minutes due to API rate limiting (~1 req/sec).<br/>
+      Results are cached locally in <code>shots_cache.csv</code> — you only
+      need to refresh when new games have been played.
+    </div>
+    <form method="POST" action="/refresh">
+      <button type="submit" class="btn btn-danger">
+        Start Fetch (this may take a few minutes)
+      </button>
+      <a href="/" class="btn btn-primary" style="margin-left:0.75rem;">
+        Cancel
+      </a>
+    </form>
+  </div>
+</div>
+{% endblock %}

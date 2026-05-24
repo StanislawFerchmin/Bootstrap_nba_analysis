@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>{% block title %}NBA Streakiness{% endblock %}</title>
+  <style>
+    :root {
+      --bg:      #0f1117;
+      --panel:   #1a1d2e;
+      --border:  #2a2d3e;
+      --red:     #e63946;
+      --green:   #2ec4b6;
+      --amber:   #fca311;
+      --blue:    #4361ee;
+      --text:    #e0e0e0;
+      --muted:   #8890a8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Segoe UI", system-ui, sans-serif;
+      min-height: 100vh;
+    }
+
+    /* ── Nav ── */
+    nav {
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      padding: 0.75rem 2rem;
+      display: flex;
+      align-items: center;
+      gap: 2rem;
+    }
+    nav .brand {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--green);
+      text-decoration: none;
+      letter-spacing: 0.02em;
+    }
+    nav a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 0.88rem;
+      transition: color 0.2s;
+    }
+    nav a:hover { color: var(--text); }
+
+    /* ── Layout ── */
+    .container { max-width: 1200px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .card h2 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 1rem;
+    }
+
+    /* ── Stat badges ── */
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 1rem;
+    }
+    .stat-box {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+      text-align: center;
+    }
+    .stat-box .label { font-size: 0.75rem; color: var(--muted); margin-bottom: 0.35rem; }
+    .stat-box .value { font-size: 1.6rem; font-weight: 700; }
+    .stat-box .value.red   { color: var(--red); }
+    .stat-box .value.green { color: var(--green); }
+    .stat-box .value.amber { color: var(--amber); }
+    .stat-box .value.blue  { color: var(--blue); }
+
+    /* ── Tables ── */
+    table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+    th {
+      background: var(--bg);
+      color: var(--muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 0.72rem;
+      letter-spacing: 0.06em;
+      padding: 0.6rem 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    td { padding: 0.55rem 0.75rem; border-bottom: 1px solid var(--border); }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(255,255,255,0.03); }
+    .sig   { color: var(--red);   font-weight: 600; }
+    .nosig { color: var(--muted); }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-block;
+      padding: 0.55rem 1.2rem;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      border: none;
+      transition: opacity 0.15s;
+    }
+    .btn:hover { opacity: 0.85; }
+    .btn-primary { background: var(--blue);  color: #fff; }
+    .btn-danger  { background: var(--red);   color: #fff; }
+    .btn-green   { background: var(--green); color: #000; }
+
+    /* ── Search box ── */
+    .search-wrap { position: relative; max-width: 480px; }
+    .search-wrap input {
+      width: 100%;
+      padding: 0.65rem 1rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 0.95rem;
+      outline: none;
+    }
+    .search-wrap input:focus { border-color: var(--blue); }
+    #autocomplete-list {
+      position: absolute;
+      top: 100%; left: 0; right: 0;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-top: none;
+      border-radius: 0 0 8px 8px;
+      max-height: 240px;
+      overflow-y: auto;
+      z-index: 100;
+    }
+    #autocomplete-list div {
+      padding: 0.6rem 1rem;
+      cursor: pointer;
+      font-size: 0.875rem;
+      transition: background 0.1s;
+    }
+    #autocomplete-list div:hover { background: var(--border); }
+
+    /* ── Plot images ── */
+    .plot-img { width: 100%; border-radius: 6px; display: block; }
+    .plot-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+    @media (max-width: 760px) { .plot-grid { grid-template-columns: 1fr; } }
+
+    /* ── Misc ── */
+    h1 { font-size: 1.6rem; font-weight: 700; margin-bottom: 0.25rem; }
+    .subtitle { color: var(--muted); font-size: 0.9rem; margin-bottom: 1.5rem; }
+    .hypothesis-box {
+      background: var(--bg);
+      border-left: 3px solid var(--amber);
+      padding: 1rem 1.2rem;
+      border-radius: 0 8px 8px 0;
+      font-size: 0.875rem;
+      line-height: 1.65;
+      color: var(--text);
+    }
+    .hypothesis-box code {
+      background: var(--border);
+      padding: 0.1rem 0.4rem;
+      border-radius: 3px;
+      font-family: monospace;
+      font-size: 0.82rem;
+    }
+  </style>
+</head>
+<body>
+<nav>
+  <a class="brand" href="/">NBA Streakiness</a>
+  <a href="/">Search</a>
+  <a href="/overview">All Players</a>
+  {% for t in ["SAS","OKC","NYK","CLE"] %}
+  <a href="/team/{{ t }}">{{ t }}</a>
+  {% endfor %}
+  <a href="/refresh" style="margin-left:auto; color:var(--amber)">Refresh Data</a>
+</nav>
+{% block content %}{% endblock %}
+</body>
+</html>

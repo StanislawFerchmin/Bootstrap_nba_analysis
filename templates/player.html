@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+{% block title %}{{ player_name }} — Streakiness{% endblock %}
+{% block content %}
+<div class="container">
+
+  <h1>{{ player_name }}</h1>
+  <p class="subtitle">
+    Game-level parametric bootstrap  ·  2025-26 season  ·
+    {{ summary.RS_games }} RS games  ·  {{ summary.PO_games }} PO games
+  </p>
+
+  <!-- Stat summary badges -->
+  <div class="card">
+    <h2>Key Statistics</h2>
+    <div class="stat-grid">
+      <div class="stat-box">
+        <div class="label">Z_RS</div>
+        <div class="value {% if summary.Z_RS < 0 %}red{% else %}green{% endif %}">
+          {{ "%.3f"|format(summary.Z_RS) }}
+        </div>
+      </div>
+      <div class="stat-box">
+        <div class="label">Z_PO</div>
+        <div class="value {% if summary.Z_PO < 0 %}red{% else %}green{% endif %}">
+          {{ "%.3f"|format(summary.Z_PO) }}
+        </div>
+      </div>
+      <div class="stat-box">
+        <div class="label">DeltaZ (PO - RS)</div>
+        <div class="value amber">{{ "%+.4f"|format(summary.delta_Z) }}</div>
+      </div>
+      <div class="stat-box">
+        <div class="label">p-value (2-tail)</div>
+        <div class="value {% if summary.p_value < 0.05 %}red{% else %}green{% endif %}">
+          {{ "%.4f"|format(summary.p_value) }}
+        </div>
+      </div>
+      <div class="stat-box">
+        <div class="label">Significant?</div>
+        <div class="value {% if summary.significant %}red{% else %}green{% endif %}">
+          {{ "YES" if summary.significant else "NO" }}
+        </div>
+      </div>
+      <div class="stat-box">
+        <div class="label">RS Games</div>
+        <div class="value blue">{{ summary.RS_games }}</div>
+      </div>
+      <div class="stat-box">
+        <div class="label">PO Games</div>
+        <div class="value blue">{{ summary.PO_games }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hypothesis interpretation -->
+  <div class="card">
+    <h2>Hypothesis Test Interpretation</h2>
+    <div class="hypothesis-box">
+      {% if summary.significant %}
+      <strong>Reject H0</strong> at alpha = 0.05.<br/>
+      The observed shift in streakiness between the Regular Season and Playoffs
+      (<code>DeltaZ = {{ "%+.4f"|format(summary.delta_Z) }}</code>) is
+      statistically significant (p = {{ "%.4f"|format(summary.p_value) }}).
+      {% if summary.delta_Z < 0 %}
+      The player exhibits <strong>more streakiness in the Playoffs</strong>
+      (fewer runs than chance predicts), consistent with a hot-hand effect
+      under elevated pressure.
+      {% else %}
+      The player exhibits <strong>more alternating behavior in the Playoffs</strong>
+      (more runs than chance predicts), suggesting regression toward randomness
+      or an anti-streaky defensive response.
+      {% endif %}
+      {% else %}
+      <strong>Fail to reject H0</strong> at alpha = 0.05.<br/>
+      The observed DeltaZ = {{ "%+.4f"|format(summary.delta_Z) }} could plausibly
+      arise by chance under the null hypothesis of within-game independence
+      (p = {{ "%.4f"|format(summary.p_value) }}).
+      No significant streakiness shift was detected between the Regular Season
+      and Playoffs.
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Bootstrap distribution (full width) -->
+  <div class="card">
+    <h2>Bootstrap Null Distribution  (B = 5 000)</h2>
+    <img src="data:image/png;base64,{{ plot_bootstrap }}" class="plot-img"
+         alt="Bootstrap distribution" />
+    <p style="color:var(--muted); font-size:0.8rem; margin-top:0.6rem;">
+      Blue: empirical null distribution of DeltaZ* under H0.
+      Red vertical line: observed DeltaZ.
+      Shaded tails: region where |DeltaZ*| >= |DeltaZ| (contributes to p-value).
+    </p>
+  </div>
+
+  <!-- Two-column plots -->
+  <div class="plot-grid">
+    <div class="card">
+      <h2>Z_RS vs Z_PO</h2>
+      <img src="data:image/png;base64,{{ plot_z_compare }}" class="plot-img"
+           alt="Z comparison" />
+    </div>
+    <div class="card">
+      <h2>FG% vs Streakiness per Game</h2>
+      <img src="data:image/png;base64,{{ plot_fg_vs_z }}" class="plot-img"
+           alt="FG% vs Z" />
+    </div>
+  </div>
+
+  <!-- Per-game timeline (full width) -->
+  <div class="card">
+    <h2>Per-Game Streakiness Timeline</h2>
+    <img src="data:image/png;base64,{{ plot_timeline }}" class="plot-img"
+         alt="Timeline" />
+    <p style="color:var(--muted); font-size:0.8rem; margin-top:0.6rem;">
+      Negative Z: fewer runs (more streaky).  Positive Z: more alternating.
+    </p>
+  </div>
+
+  <!-- Per-game data table -->
+  <div class="card">
+    <h2>Per-Game Records ({{ game_records|length }} valid games)</h2>
+    <div style="overflow-x:auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>Game ID</th>
+            <th>Context</th>
+            <th>Shots (n)</th>
+            <th>FG% (p)</th>
+            <th>Z_i</th>
+            <th>Streakiness</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in game_records %}
+          <tr>
+            <td style="font-family:monospace; font-size:0.8rem;">{{ r.game_id }}</td>
+            <td>
+              <span style="color:{% if r.season_type == 'RS' %}var(--green){% else %}var(--red){% endif %}; font-weight:600;">
+                {{ r.season_type }}
+              </span>
+            </td>
+            <td>{{ r.n|int }}</td>
+            <td>{{ "%.1f"|format(r.p * 100) }}%</td>
+            <td style="font-weight:600; color:{% if r.z < -0.5 %}var(--red){% elif r.z > 0.5 %}var(--green){% else %}var(--text){% endif %}">
+              {{ "%+.3f"|format(r.z) }}
+            </td>
+            <td style="font-size:0.82rem; color:var(--muted);">
+              {% if r.z < -1.0 %}Very Streaky
+              {% elif r.z < -0.3 %}Mildly Streaky
+              {% elif r.z > 1.0 %}Very Alternating
+              {% elif r.z > 0.3 %}Mildly Alternating
+              {% else %}Random
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div style="margin-bottom:2rem;">
+    <a href="/" class="btn btn-primary">Back to Search</a>
+    <a href="/overview" class="btn btn-green" style="margin-left:0.75rem;">
+      All Players Overview
+    </a>
+  </div>
+</div>
+{% endblock %}

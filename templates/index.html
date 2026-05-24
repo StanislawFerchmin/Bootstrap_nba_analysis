@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}NBA Streakiness — Search{% endblock %}
+{% block content %}
+<div class="container">
+  <h1>Hot-Hand Streakiness Analysis</h1>
+  <p class="subtitle">
+    Game-level Wald-Wolfowitz runs test + parametric bootstrap (B = 5 000) for
+    SAS · OKC · NYK · CLE — 2025-26 season
+  </p>
+
+  <!-- Search card -->
+  <div class="card">
+    <h2>Player Search</h2>
+    <div class="search-wrap">
+      <input id="player-search" type="text" placeholder="Type a player name..."
+             autocomplete="off" {% if not data_loaded %}disabled{% endif %} />
+      <div id="autocomplete-list"></div>
+    </div>
+    {% if not data_loaded %}
+    <p style="color:var(--amber); margin-top:1rem; font-size:0.875rem;">
+      No data loaded yet.
+      <a href="/refresh" class="btn btn-danger" style="margin-left:0.75rem;">
+        Fetch from NBA API
+      </a>
+    </p>
+    {% endif %}
+  </div>
+
+  <!-- Team quick-links -->
+  <div class="card">
+    <h2>Browse by Team</h2>
+    <div style="display:flex; gap:1rem; flex-wrap:wrap;">
+      {% for team in teams %}
+      <a href="/team/{{ team }}" class="btn btn-primary">{{ team }}</a>
+      {% endfor %}
+      {% if not teams %}
+      <span style="color:var(--muted); font-size:0.875rem;">No teams loaded.</span>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Statistical methodology card -->
+  <div class="card">
+    <h2>Methodology</h2>
+    <div class="hypothesis-box">
+      <strong>H0 (null hypothesis):</strong>
+      Within each game, a player's shot outcomes are i.i.d. Bernoulli(<em>p_i</em>) —
+      pure randomness, no hot-hand effect.<br/><br/>
+      <strong>H1 (alternative):</strong>
+      The playoff streakiness (aggregated Z-score <code>Z_PO</code>) differs
+      significantly from the regular-season baseline (<code>Z_RS</code>),
+      i.e. <code>DeltaZ = Z_PO - Z_RS != 0</code>.<br/><br/>
+      <strong>Test statistic:</strong>
+      Volume-weighted Wald-Wolfowitz Z-score per game, meta-analytically aggregated.
+      Negative Z means fewer runs than expected (streaky / hot-hand).
+      Positive Z means more alternating than expected (anti-streaky).<br/><br/>
+      <strong>p-value:</strong>
+      Two-tailed empirical p-value from a game-level parametric bootstrap
+      (B = 5 000). Significance threshold: alpha = 0.05.
+    </div>
+  </div>
+
+  <!-- All players mini-table -->
+  {% if players %}
+  <div class="card">
+    <h2>Available Players ({{ players|length }})</h2>
+    <div style="columns: 3; column-gap: 1.5rem; font-size:0.875rem;">
+      {% for p in players %}
+      <div style="margin-bottom:0.3rem;">
+        <a href="/player/{{ p }}" style="color:var(--green); text-decoration:none;">
+          {{ p }}
+        </a>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<script>
+const input = document.getElementById("player-search");
+const list  = document.getElementById("autocomplete-list");
+if (input) {
+  input.addEventListener("input", async () => {
+    const q = input.value.trim();
+    list.innerHTML = "";
+    if (q.length < 2) return;
+    const resp = await fetch(`/api/players?q=${encodeURIComponent(q)}`);
+    const names = await resp.json();
+    names.slice(0, 12).forEach(name => {
+      const d = document.createElement("div");
+      d.textContent = name;
+      d.onclick = () => { window.location.href = "/player/" + encodeURIComponent(name); };
+      list.appendChild(d);
+    });
+  });
+  document.addEventListener("click", e => {
+    if (!e.target.closest(".search-wrap")) list.innerHTML = "";
+  });
+}
+</script>
+{% endblock %}

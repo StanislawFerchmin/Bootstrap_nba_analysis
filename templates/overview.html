@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Overview — NBA Streakiness{% endblock %}
+{% block content %}
+<div class="container">
+  <h1>
+    {% if team_filter is defined and team_filter %}
+      {{ team_filter }} — Streakiness Overview
+    {% else %}
+      All Players — Streakiness Overview
+    {% endif %}
+  </h1>
+  <p class="subtitle">
+    DeltaZ = Z_PO - Z_RS.  Red = significant (p &lt; 0.05) at alpha = 0.05.
+  </p>
+
+  <div class="card">
+    <h2>DeltaZ Comparison Chart</h2>
+    <img src="data:image/png;base64,{{ plot_img }}" class="plot-img"
+         alt="DeltaZ overview" />
+  </div>
+
+  <div class="card">
+    <h2>Results Table</h2>
+    <div style="overflow-x:auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>Player</th>
+            <th>Z_RS</th>
+            <th>Z_PO</th>
+            <th>DeltaZ</th>
+            <th>p-value</th>
+            <th>Sig?</th>
+            <th>RS games</th>
+            <th>PO games</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in summaries %}
+          <tr>
+            <td>
+              <a href="/player/{{ s.player }}"
+                 style="color:var(--green); text-decoration:none;">
+                {{ s.player }}
+              </a>
+            </td>
+            <td style="color:{% if s.Z_RS < 0 %}var(--red){% else %}var(--green){% endif %}">
+              {{ "%+.3f"|format(s.Z_RS) }}
+            </td>
+            <td style="color:{% if s.Z_PO < 0 %}var(--red){% else %}var(--green){% endif %}">
+              {{ "%+.3f"|format(s.Z_PO) }}
+            </td>
+            <td style="font-weight:600; color:var(--amber);">
+              {{ "%+.4f"|format(s.delta_Z) }}
+            </td>
+            <td>{{ "%.4f"|format(s.p_value) }}</td>
+            <td class="{% if s.significant %}sig{% else %}nosig{% endif %}">
+              {{ "YES" if s.significant else "no" }}
+            </td>
+            <td>{{ s.RS_games }}</td>
+            <td>{{ s.PO_games }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div style="margin-bottom:2rem;">
+    <a href="/" class="btn btn-primary">Back to Search</a>
+  </div>
+</div>
+{% endblock %}
